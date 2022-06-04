@@ -1,0 +1,4 @@
+datetime
+Flask
+google-cloud-bigtable==2.10.0
+google-cloud-core==2.3.0
