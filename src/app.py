@@ -23,7 +23,8 @@ def index():
 def vote():
     return render_template('vote.html')
 
-def write_one_vote_to_bigtable(account_id, candidate_id):
+# 把某人的一筆投票記錄寫入資料庫
+def write_one_vote_to_bigtable(account_id, column_id, candidate_id):
     print("Writing some greetings to the table.")
     greetings = ["Hello World!", "Hello Cloud Bigtable!", "Hello Python!"]
     rows = []
@@ -37,7 +38,8 @@ def write_one_vote_to_bigtable(account_id, candidate_id):
         rows.append(row)
     table.mutate_rows(rows)
 
-def read_one_vote_from_bigtable(account_id):
+# 從資料庫讀取某人在某投票項目的紀錄
+def read_one_vote_from_bigtable(account_id, column_id):
     # Create a filter to only retrieve the most recent version of the cell for each column accross entire row.
     row_filter = row_filters.CellsColumnLimitFilter(1)
     print("Getting a single greeting by row key.")
@@ -46,7 +48,8 @@ def read_one_vote_from_bigtable(account_id):
     cell = row.cells[column_family_id][column][0]
     print(cell.value.decode("utf-8"))
 
-def read_all_votes_from_bigtable():
+# 從資料庫讀取某個投票項目的所有投票紀錄總計
+def read_all_votes_from_bigtable(column_id):
     # Create a filter to only retrieve the most recent version of the cell for each column accross entire row.
     row_filter = row_filters.CellsColumnLimitFilter(1)
     print("Scanning for all greetings:")
@@ -56,5 +59,5 @@ def read_all_votes_from_bigtable():
         print(cell.value.decode("utf-8"))
 
 
-if __name__ == '__main__':
-    app.run()
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=80)
