@@ -11,6 +11,8 @@ from google.cloud.bigtable import column_family
 from google.cloud.bigtable import row_filters
 
 
+##############################################################################
+
 ## Read Config File
 with open("./config/config.yml", "r") as stream:
     try:
@@ -38,10 +40,6 @@ INSTANCE = CLIENT.instance(INSTANCE_ID)
 TABLE = INSTANCE.table(TABLE_ID)
 
 
-## Hash Function
-HASH_FUNCTION = hashlib.sha256()
-
-
 ## Initialize Flask APP
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -51,22 +49,26 @@ app.secret_key = SECRET_KEY
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+##############################################################################
+
 # User
 rows = TABLE.read_rows(filter_=row_filters.StripValueTransformerFilter(True))
-users = [row.row_key.decode('utf-8').split("#")[-1] for row in rows]
-# users = {'foo@bar.tld': {'password': 'secret'}}  
+users = [row.row_key.decode('utf-8') for row in rows]
+# {user_id: user_info} pairs
+users = {user.split("#")[-1]: user for user in users}
   
   
 class User(UserMixin):
     pass  
   
   
+# 檢查 user 登入狀態
 @login_manager.user_loader  
 def user_loader(id):   
-    if id not in users:  
+    if id not in users.values():  
         return  
     user = User()  
-    user.id = id  
+    user.id = id
     return user  
  
   
@@ -87,19 +89,26 @@ def index():
     if request.method == 'POST':
         person_id = request.form.get('person_id')
         health_id = request.form.get('health_id')
-        id = f"{person_id}#{health_id}"
-        HASH_FUNCTION.update(id)
-        hash_result = HASH_FUNCTION.hexdigest()
-        if hash_result in users:  
+        id = f"{person_id}#{health_id}".encode('utf-8')
+        print(id)
+        ## Hash Function
+        hash = hashlib.sha256()
+        hash.update(id)
+        hash_result = hash.hexdigest()
+        if hash_result in users: 
+            print("登入成功") 
             #  實作 User 類別  
             user = User()  
-            #  設置 id  
-            user.id = hash_result  
+            #  設置 id (這裡的 id 有包括年份與投票區)
+            user.id = users[hash_result]
             #  這邊，透過 login_user 來記錄 user_id  
             login_user(user)  
             #  登入成功，轉址  
             return redirect(url_for('vote')) 
-        return render_template('index.html')  
+        else:
+            print("登入失敗") 
+            print(hash_result)
+            return render_template('index.html')  
 
 
 @app.route("/vote", methods=['GET', 'POST'])
@@ -107,8 +116,8 @@ def index():
 def vote():
     #  current_user確實的取得了登錄狀態
     if current_user.is_active:  
-        return 'Logged in as: ' + current_user.id + 'Login is_active:True'
-    account_id = "test"
+        print(current_user.id)
+    account_id = current_user.id.split("#")[-1]
     column_family_id = "election"
     column_id = "taipei_mayor"
     if request.method == 'GET':
