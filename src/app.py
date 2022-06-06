@@ -1,13 +1,17 @@
+## Import packages
+import os
 import yaml
+import hashlib
 import datetime
 
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, url_for, redirect
+from flask_login import LoginManager, UserMixin, login_user, current_user, login_required, logout_user 
 from google.cloud import bigtable
 from google.cloud.bigtable import column_family
 from google.cloud.bigtable import row_filters
 
 
-# Read Config File
+## Read Config File
 with open("./config/config.yml", "r") as stream:
     try:
         config = yaml.safe_load(stream)
@@ -15,30 +19,95 @@ with open("./config/config.yml", "r") as stream:
         print(exc)
 
 
+## Set Bigtable & Other Config
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./config/gcp_key.json"
+
 PROJECT_ID = config["project_id"]
 INSTANCE_ID = config["instance_id"]
+
 TABLE_ID = config["table_id"]
+
 PORT_NUM = int(config["port_num"])
+SECRET_KEY = config["secret_key"]
 
 
-# [START bigtable_hw_connect]
-
-# The client must be created with admin=True because it will create a table
+## Connect to Bigtable
+# admin=True -> Because it will create a table
 CLIENT = bigtable.Client(project=PROJECT_ID, admin=True)
 INSTANCE = CLIENT.instance(INSTANCE_ID)
 TABLE = INSTANCE.table(TABLE_ID)
 
-# [END bigtable_hw_connect]
+
+## Hash Function
+HASH_FUNCTION = hashlib.sha256()
 
 
+## Initialize Flask APP
 app = Flask(__name__)
+app.secret_key = SECRET_KEY
 
-@app.route("/")
+
+## Login Management
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+# User
+rows = TABLE.read_rows(filter_=row_filters.StripValueTransformerFilter(True))
+users = [row.row_key.decode('utf-8').split("#")[-1] for row in rows]
+# users = {'foo@bar.tld': {'password': 'secret'}}  
+  
+  
+class User(UserMixin):
+    pass  
+  
+  
+@login_manager.user_loader  
+def user_loader(id):   
+    if id not in users:  
+        return  
+    user = User()  
+    user.id = id  
+    return user  
+ 
+  
+# @app.route('/logout')  
+# def logout():  
+#     """  
+#  logout\_user會將所有的相關session資訊給pop掉 
+#  """ 
+#     logout_user()  
+#     return 'Logged out'  
+
+
+## Routing
+@app.route("/", methods=['GET', 'POST'])
 def index():
-    return render_template('index.html')
+    if request.method == 'GET':
+        return render_template('index.html')
+    if request.method == 'POST':
+        person_id = request.form.get('person_id')
+        health_id = request.form.get('health_id')
+        id = f"{person_id}#{health_id}"
+        HASH_FUNCTION.update(id)
+        hash_result = HASH_FUNCTION.hexdigest()
+        if hash_result in users:  
+            #  實作 User 類別  
+            user = User()  
+            #  設置 id  
+            user.id = hash_result  
+            #  這邊，透過 login_user 來記錄 user_id  
+            login_user(user)  
+            #  登入成功，轉址  
+            return redirect(url_for('vote')) 
+        return render_template('index.html')  
 
-@app.route("/vote/", methods=['GET', 'POST'])
+
+@app.route("/vote", methods=['GET', 'POST'])
+@login_required
 def vote():
+    #  current_user確實的取得了登錄狀態
+    if current_user.is_active:  
+        return 'Logged in as: ' + current_user.id + 'Login is_active:True'
     account_id = "test"
     column_family_id = "election"
     column_id = "taipei_mayor"

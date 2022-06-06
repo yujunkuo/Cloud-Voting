@@ -1,5 +1,6 @@
 # Ignore config file
 *.yml
+*.json
 
 # Ignore MAC file and Cache file
 .DS_Store
