@@ -1,5 +1,6 @@
 # Google Cloud Platform Config.
 project_id: abc123
 instance_id: abc456
-table_id: abc789
+login_table_id: table1
+voting_table_id: table2
 port_num: 80

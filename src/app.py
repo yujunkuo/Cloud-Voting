@@ -1,18 +1,19 @@
 import yaml
 import datetime
 
-from flask import Flask, render_template
+from flask import Flask, request, render_template
 from google.cloud import bigtable
 from google.cloud.bigtable import column_family
 from google.cloud.bigtable import row_filters
 
 
 # Read Config File
-with open("./config/config.yml", 'r') as stream:
+with open("./config/config.yml", "r") as stream:
     try:
         config = yaml.safe_load(stream)
     except yaml.YAMLError as exc:
         print(exc)
+
 
 PROJECT_ID = config["project_id"]
 INSTANCE_ID = config["instance_id"]
@@ -20,25 +21,34 @@ TABLE_ID = config["table_id"]
 PORT_NUM = int(config["port_num"])
 
 
-app = Flask(__name__)
-
-
 # [START bigtable_hw_connect]
 
 # The client must be created with admin=True because it will create a table
-client = bigtable.Client(project=PROJECT_ID, admin=True)
-instance = client.instance(INSTANCE_ID)
-table = instance.table(TABLE_ID)
+CLIENT = bigtable.Client(project=PROJECT_ID, admin=True)
+INSTANCE = CLIENT.instance(INSTANCE_ID)
+TABLE = INSTANCE.table(TABLE_ID)
 
 # [END bigtable_hw_connect]
+
+
+app = Flask(__name__)
 
 @app.route("/")
 def index():
     return render_template('index.html')
 
-@app.route("/vote/")
+@app.route("/vote/", methods=['GET', 'POST'])
 def vote():
-    return render_template('vote.html')
+    account_id = "test"
+    column_family_id = "election"
+    column_id = "taipei_mayor"
+    if request.method == 'GET':
+        return render_template('vote.html')
+    if request.method == 'POST':
+        candidate_id = request.form.get('selection')
+        write_one_vote_to_bigtable(TABLE, account_id, column_family_id, column_id, candidate_id)
+        return render_template('index.html')
+    
 
 # # 把某人的一筆投票記錄寫入資料庫
 # def write_one_vote_to_bigtable(account_id: str, column_id: str, candidate_id: str):
