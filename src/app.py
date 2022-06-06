@@ -1,17 +1,34 @@
+import yaml
 import datetime
+
 from flask import Flask, render_template
 from google.cloud import bigtable
 from google.cloud.bigtable import column_family
 from google.cloud.bigtable import row_filters
 
+
+# Read Config File
+with open("./config/config.yml", 'r') as stream:
+    try:
+        config = yaml.safe_load(stream)
+    except yaml.YAMLError as exc:
+        print(exc)
+
+PROJECT_ID = config["project_id"]
+INSTANCE_ID = config["instance_id"]
+TABLE_ID = config["table_id"]
+PORT_NUM = int(config["port_num"])
+
+
 app = Flask(__name__)
+
 
 # [START bigtable_hw_connect]
 
 # The client must be created with admin=True because it will create a table
-# client = bigtable.Client(project=project_id, admin=True)
-# instance = client.instance(instance_id)
-# table = instance.table(table_id)
+client = bigtable.Client(project=PROJECT_ID, admin=True)
+instance = client.instance(INSTANCE_ID)
+table = instance.table(TABLE_ID)
 
 # [END bigtable_hw_connect]
 
@@ -74,4 +91,4 @@ def read_all_votes_from_bigtable(table, column_family_id: str, column_id: str):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80)
+    app.run(host="0.0.0.0", port=PORT_NUM)

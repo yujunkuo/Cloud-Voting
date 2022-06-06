@@ -1,0 +1,5 @@
+# Google Cloud Platform Config.
+project_id: abc123
+instance_id: abc456
+table_id: abc789
+port_num: 80

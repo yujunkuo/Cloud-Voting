@@ -1,6 +1,11 @@
-# Byte-compiled / optimized / DLL files
+# Ignore config file
+*.yml
+
+# Ignore MAC file and Cache file
 .DS_Store
 __pycache__/
+
+# Byte-compiled / optimized / DLL files
 *.py[cod]
 *$py.class
 
