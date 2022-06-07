@@ -40,6 +40,7 @@ def read_all_columns(table) -> dict:
 def write_one_vote(table, account_id: str, column_family_id: str, column_id: str, candidate_id: str):
     column = column_id.encode()
     row_key = account_id.encode()
+    candidate_id = candidate_id.encode()
     row = table.direct_row(row_key)
     row.set_cell(
         column_family_id, column, candidate_id, timestamp=datetime.datetime.utcnow()

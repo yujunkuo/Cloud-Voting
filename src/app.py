@@ -73,16 +73,7 @@ def user_loader(id):
         return  
     user = User()  
     user.id = id
-    return user  
- 
-  
-# @app.route('/logout')  
-# def logout():  
-#     """  
-#  logout\_user會將所有的相關session資訊給pop掉 
-#  """ 
-#     logout_user()  
-#     return 'Logged out'  
+    return user   
 
 
 ## Routing
@@ -129,6 +120,8 @@ def vote():
     # 取得該使用者可以投票的項目
     available_voting_items = dict()
     for column_family, columns in column_names.items():
+        if column_family == "Status":
+            continue
         if "#" not in columns[0]:
             available_voting_items[column_family] = columns
         else:
@@ -139,22 +132,42 @@ def vote():
                         column_family not in available_voting_items else available_voting_items[column_family] + [column.split("#")[1]]
     print(available_voting_items)
     if request.method == 'GET':
-        return render_template('vote.html', result=available_voting_items)
+        try:
+            big_table.read_vote(TABLE, account_id, "Status", "Voted")
+            print(big_table.read_vote(TABLE, account_id, "Status", "Voted"))
+            # 登出
+            logout_user()
+            return render_template('fail.html')
+        except:
+            return render_template('vote.html', result=available_voting_items)
     if request.method == 'POST':
-        # candidate_id = request.form.get('selection')
-        # write_one_vote(TABLE, account_id, column_family_id, column_id, candidate_id)
-        return render_template('index.html')
+        voting_result = []
+        for column_family in available_voting_items:
+            candidate_id = request.form.get(column_family)
+            voting_result.append([column_family, candidate_id])
+            if candidate_id and candidate_id != "null":
+                if candidate_id in column_names[column_family]:
+                    big_table.write_one_vote(TABLE, account_id, column_family, candidate_id, "1")
+                    continue
+                for place in [city, district]:
+                    column = f"{place}#{candidate_id}"
+                    if column in column_names[column_family]:
+                        big_table.write_one_vote(TABLE, account_id, column_family, column, "1")
+        # 記錄使用者投完票了
+        big_table.write_one_vote(TABLE, account_id, "Status", "Voted", "1")
+        # 登出
+        logout_user()
+        return render_template('success.html', voting_result=voting_result)
+    
 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT_NUM)
-
-
-# usa_dict={'California':['Los_angles','San_francisco','San_diego'],'Texas':['Houston','San_Antonio','Dallas'] , 'Alaska':['Sitka','Juneau','Wrangell']}
-# for i in range(0, 1000):
-#     j = i % len(usa_dict)
-#     j = list(usa_dict.keys())[j]
-#     k = i % len(usa_dict[j])
-#     id = f"{i}#{i}".encode('utf-8')
-#     account_id = f"2022#{j}#{usa_dict[j][k]}#{hash(id)}"
-#     write_one_vote(TABLE, account_id, "Mayor", "Alaska#Iris", "")
+    # usa_dict={'California':['Los_angles','San_francisco','San_diego'],'Texas':['Houston','San_Antonio','Dallas'] , 'Alaska':['Sitka','Juneau','Wrangell']}
+    # for i in range(0, 10):
+    #     j = i % len(usa_dict)
+    #     j = list(usa_dict.keys())[j]
+    #     k = i % len(usa_dict[j])
+    #     id = f"{i}#{i}".encode('utf-8')
+    #     account_id = f"2022#{j}#{usa_dict[j][k]}#{utils.hash(id)}"
+    #     big_table.write_one_vote(TABLE, account_id, "Mayor", "Alaska#Iris", "")
