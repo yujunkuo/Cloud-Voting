@@ -72,7 +72,7 @@ def read_all_votes(table, column_family_id: str, column_id: str):
     # Create a filter to only retrieve the most recent version of the cell for each column accross entire row.
     result = []
     row_filter = row_filters.CellsColumnLimitFilter(1)
-    column = column_id.encode()
+    # column = column_id.encode()
     partial_rows = table.read_rows(filter_=row_filter)
     for row in partial_rows:
         cell = row.cells[column_family_id][column][0]

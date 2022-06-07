@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+
+    <p>{{ all_vote_dic }}</p>
+    
+    <script>
+
+
+
+		var width = 700
+		var height = 500
+		var padding = {
+			top : 50,
+			right : 50,
+			bottom : 50,
+			left : 50
+		}
+
+		var svg = d3.select('body').append('svg')
+			.attr('width',width)
+			.attr('height',height)
+
+ 
+		var startWidth = 100
+		var endWidth = 500
+
+		svg.append('rect')
+			.attr('fill','steelblue')
+			.attr('x',10)
+			.attr('y',10)
+			.attr('width',startWidth)
+			.attr('height',30)
+			
+
+		svg.append('text')
+			.attr('fill','white')
+			.attr('x',startWidth)
+			.attr('y',10)
+			.attr('dy','1.2em')
+			.attr('text-anchor','end')
+			.text(startWidth)
+
+		d3.transition()
+		  .duration(1000)
+		  .tween("move", function(){
+		      return function(t){
+		        var interpolate = d3.interpolate(startWidth,endWidth)
+		        var num = interpolate(t) 
+		        //t為0時等於startWidth，t為1時等於endWidth
+		    
+		        d3.select("rect")
+		          .attr("width", num)
+		        
+		        d3.select("text")
+		          .attr("x", num)
+		          .text(Math.floor(num))
+		    }
+		  })	
+
+          svg.append('rect')
+			.attr('fill','steelblue')
+			.attr('x',10)
+			.attr('y',10)
+			.attr('width',startWidth)
+			.attr('height',30)
+			
+
+		svg.append('text')
+			.attr('fill','white')
+			.attr('x',startWidth)
+			.attr('y',10)
+			.attr('dy','1.2em')
+			.attr('text-anchor','end')
+			.text(startWidth)
+
+		d3.transition()
+		  .duration(1000)
+		  .tween("move", function(){
+		      return function(t){
+		        var interpolate = d3.interpolate(startWidth,endWidth)
+		        var num = interpolate(t) 
+		        //t為0時等於startWidth，t為1時等於endWidth
+		    
+		        d3.select("rect")
+		          .attr("width", num)
+		        
+		        d3.select("text")
+		          .attr("x", num)
+		          .text(Math.floor(num))
+		    }
+		  })	
+	</script>
+</body>
+</html>

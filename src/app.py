@@ -188,7 +188,23 @@ def admin():
         else:
             print("登入失敗") 
             return render_template('admin_index.html')
-    
+
+
+@app.route("/d3", methods=['GET'])
+# @login_required
+def d3():
+    if request.method == 'GET':
+        all_column_families = big_table.read_column_families(TABLE)
+        all_columns = big_table.read_all_columns(TABLE)
+        all_vote_dic = dict()
+        for k, v in all_columns.items():
+            column_dic = dict()
+            for col in v:
+                all_votes  = big_table.read_all_votes(TABLE, str(k), str(col))
+                column_dic[col] = all_votes
+            all_vote_dic[k] = column_dic
+
+        return render_template('d3.html', all_column_families=all_column_families, all_columns=all_columns, all_vote_dic=all_vote_dic)
 
 
 if __name__ == "__main__":
