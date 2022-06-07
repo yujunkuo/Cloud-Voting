@@ -23,10 +23,10 @@ from google.cloud.bigtable import row_filters
 #     table.mutate_rows(rows)
 
 
-# # 讀取現在所有的 Column Families
-# def read_column_families(table):
-#     column_families = list(table.list_column_families().keys())
-#     return column_families
+# 讀取現在所有的 Column Families
+def read_column_families(table):
+    column_families = list(table.list_column_families().keys())
+    return column_families
 
 
 # 讀取現在所有的 Columns
