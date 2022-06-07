@@ -105,7 +105,7 @@ def index():
         else:
             print("登入失敗") 
             print(hash_result)
-            return render_template('index.html')  
+            return render_template('login_fail.html')  
 
 
 @app.route("/vote", methods=['GET', 'POST'])
@@ -192,7 +192,8 @@ def admin():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT_NUM)
+    # app.run(host="0.0.0.0", port=PORT_NUM)
+    app.run()
     # usa_dict={'California':['Los_angles','San_francisco','San_diego'],'Texas':['Houston','San_Antonio','Dallas'] , 'Alaska':['Sitka','Juneau','Wrangell']}
     # for i in range(0, 10):
     #     j = i % len(usa_dict)
