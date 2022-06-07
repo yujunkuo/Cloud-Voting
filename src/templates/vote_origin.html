@@ -27,10 +27,8 @@
         }
 
         .form-check {
-            padding-left:15%;
             padding-top: 2%;
             padding-bottom: 2%;
-            width:100%;
         }
 
         .row {
@@ -62,10 +60,10 @@
                                             </div>
                                         </div>
 
-                                        <div class="row" style="overflow:scroll; height:400px;">
+                                        <div class="row">
 
                                             {% for key, value in result.items() %}
-                                            <div class="row">
+                                            <div class="col">
                                                 <div class="d-flex align-items-center mb-3 pb-1">
                                                     <i class="fas fa-cubes fa-2x me-3" style="color: #ff6219;"></i>
                                                     <span class="h2 fw-bold mb-0"> {{ key }} </span>
