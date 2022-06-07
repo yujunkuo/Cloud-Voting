@@ -5,6 +5,9 @@ from google.cloud import bigtable
 from google.cloud.bigtable import column_family
 from google.cloud.bigtable import row_filters
 
+
+
+### hi testing
 # # 把某人的一筆投票記錄寫入資料庫
 # def write_one_vote_to_bigtable(account_id: str, column_id: str, candidate_id: str):
 #     greetings = ["Hello World!", "Hello Cloud Bigtable!", "Hello Python!"]
