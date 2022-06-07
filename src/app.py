@@ -1,11 +1,14 @@
 ## Import packages
 import os
 import yaml
-import hashlib
 import datetime
+
+import big_table
+import utils
 
 from flask import Flask, request, render_template, url_for, redirect
 from flask_login import LoginManager, UserMixin, login_user, current_user, login_required, logout_user 
+
 from google.cloud import bigtable
 from google.cloud.bigtable import column_family
 from google.cloud.bigtable import row_filters
@@ -51,7 +54,8 @@ login_manager.init_app(app)
 
 ##############################################################################
 
-# User
+
+# Users
 rows = TABLE.read_rows(filter_=row_filters.StripValueTransformerFilter(True))
 users = [row.row_key.decode('utf-8') for row in rows]
 # {user_id: user_info} pairs
@@ -90,19 +94,17 @@ def index():
         person_id = request.form.get('person_id')
         health_id = request.form.get('health_id')
         id = f"{person_id}#{health_id}".encode('utf-8')
-        print(id)
-        ## Hash Function
-        hash = hashlib.sha256()
-        hash.update(id)
-        hash_result = hash.hexdigest()
+        ## Hash
+        hash_result = utils.hash(id)
+        #######
         if hash_result in users: 
             print("登入成功") 
             #  實作 User 類別  
-            user = User()  
+            user = User()
             #  設置 id (這裡的 id 有包括年份與投票區)
             user.id = users[hash_result]
             #  這邊，透過 login_user 來記錄 user_id  
-            login_user(user)  
+            login_user(user)
             #  登入成功，轉址  
             return redirect(url_for('vote')) 
         else:
@@ -117,66 +119,42 @@ def vote():
     #  current_user確實的取得了登錄狀態
     if current_user.is_active:  
         print(current_user.id)
-    account_id = current_user.id.split("#")[-1]
-    column_family_id = "election"
-    column_id = "taipei_mayor"
+    # 取得所有欄位名稱
+    column_names = big_table.read_all_columns(TABLE)
+    # 取得使用者帳號與區域
+    account_id = current_user.id
+    # 取得該使用者所屬的城市與行政區
+    city, district = current_user.id.split("#")[1], current_user.id.split("#")[2]
+    # print(f"該使用者所屬地區: {city} / {district}")
+    # 取得該使用者可以投票的項目
+    available_voting_items = dict()
+    for column_family, columns in column_names.items():
+        if "#" not in columns[0]:
+            available_voting_items[column_family] = columns
+        else:
+            for column in columns:
+                # print(column)
+                if column.split("#")[0] in [city, district]:
+                    available_voting_items[column_family] = [column.split("#")[1]] if \
+                        column_family not in available_voting_items else available_voting_items[column_family] + [column.split("#")[1]]
+    print(available_voting_items)
     if request.method == 'GET':
-        return render_template('vote.html')
+        return render_template('vote.html', result=available_voting_items)
     if request.method == 'POST':
-        candidate_id = request.form.get('selection')
-        write_one_vote_to_bigtable(TABLE, account_id, column_family_id, column_id, candidate_id)
+        # candidate_id = request.form.get('selection')
+        # write_one_vote(TABLE, account_id, column_family_id, column_id, candidate_id)
         return render_template('index.html')
-    
-
-# # 把某人的一筆投票記錄寫入資料庫
-# def write_one_vote_to_bigtable(account_id: str, column_id: str, candidate_id: str):
-#     greetings = ["Hello World!", "Hello Cloud Bigtable!", "Hello Python!"]
-#     rows = []
-#     column = column_id.encode()
-#     for i, value in enumerate(greetings):
-#         row_key = f"greeting{i}".encode()
-#         row = table.direct_row(row_key)
-#         row.set_cell(
-#             column_family_id, column, value, timestamp=datetime.datetime.utcnow()
-#         )
-#         rows.append(row)
-#     table.mutate_rows(rows)
-
-# 把某人的一筆投票記錄寫入資料庫
-def write_one_vote_to_bigtable(table, account_id: str, column_family_id: str, column_id: str, candidate_id: str):
-    column = column_id.encode()
-    row_key = account_id.encode()
-    row = table.direct_row(row_key)
-    row.set_cell(
-        column_family_id, column, candidate_id, timestamp=datetime.datetime.utcnow()
-    )
-    table.mutate_rows([row])
-
-
-# 從資料庫讀取某人在某投票項目的紀錄
-def read_one_vote_from_bigtable(table, account_id: str, column_family_id: str, column_id: str):
-    # Create a filter to only retrieve the most recent version of the cell for each column accross entire row.
-    row_filter = row_filters.CellsColumnLimitFilter(1)
-    column = column_id.encode()
-    row_key = account_id.encode()
-    row = table.read_row(row_key, row_filter)
-    cell = row.cells[column_family_id][column][0]
-    return cell.value.decode("utf-8")
-
-
-# 從資料庫讀取某個投票項目的所有投票紀錄總計
-def read_all_votes_from_bigtable(table, column_family_id: str, column_id: str):
-    # Create a filter to only retrieve the most recent version of the cell for each column accross entire row.
-    result = []
-    row_filter = row_filters.CellsColumnLimitFilter(1)
-    column = column_id.encode()
-    partial_rows = table.read_rows(filter_=row_filter)
-    for row in partial_rows:
-        cell = row.cells[column_family_id][column][0]
-        value = cell.value.decode("utf-8")
-        result.append(value)
-    return result
 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT_NUM)
+
+
+# usa_dict={'California':['Los_angles','San_francisco','San_diego'],'Texas':['Houston','San_Antonio','Dallas'] , 'Alaska':['Sitka','Juneau','Wrangell']}
+# for i in range(0, 1000):
+#     j = i % len(usa_dict)
+#     j = list(usa_dict.keys())[j]
+#     k = i % len(usa_dict[j])
+#     id = f"{i}#{i}".encode('utf-8')
+#     account_id = f"2022#{j}#{usa_dict[j][k]}#{hash(id)}"
+#     write_one_vote(TABLE, account_id, "Mayor", "Alaska#Iris", "")
