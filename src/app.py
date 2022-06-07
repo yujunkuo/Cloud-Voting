@@ -69,11 +69,15 @@ class User(UserMixin):
 # 檢查 user 登入狀態
 @login_manager.user_loader  
 def user_loader(id):   
-    if id not in users.values():  
-        return  
-    user = User()  
-    user.id = id
-    return user   
+    if id != "admin" and id not in users.values():  
+        return
+    else:
+        user = User()  
+        user.id = id
+        return user   
+
+
+##############################################################################
 
 
 ## Routing
@@ -158,6 +162,32 @@ def vote():
         # 登出
         logout_user()
         return render_template('success.html', voting_result=voting_result)
+    
+
+@app.route("/admin", methods=['GET', 'POST'])
+def admin():
+    if request.method == 'GET':
+        return render_template('admin_index.html')
+    if request.method == 'POST':
+        account = request.form.get('account')
+        password = request.form.get('password')
+        id = f"{account}#{password}".encode('utf-8')
+        ## Hash
+        hash_result = utils.hash(id)
+        #######
+        if hash_result == "ce8c7e426b44dd7ca875d38dc44973096626d8d7f569c52554b639998a6be4b4": 
+            print("Admin 登入成功") 
+            #  實作 User 類別  
+            user = User()
+            #  設置 id (這裡的 id 有包括年份與投票區)
+            user.id = "admin"
+            #  這邊，透過 login_user 來記錄 user_id  
+            login_user(user)
+            #  登入成功，轉址  
+            return render_template('admin.html')
+        else:
+            print("登入失敗") 
+            return render_template('admin_index.html')
     
 
 
