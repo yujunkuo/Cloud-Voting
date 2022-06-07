@@ -72,10 +72,17 @@ def read_all_votes(table, column_family_id: str, column_id: str):
     # Create a filter to only retrieve the most recent version of the cell for each column accross entire row.
     result = []
     row_filter = row_filters.CellsColumnLimitFilter(1)
-    # column = column_id.encode()
+    column = column_id.encode()
     partial_rows = table.read_rows(filter_=row_filter)
     for row in partial_rows:
-        cell = row.cells[column_family_id][column][0]
-        value = cell.value.decode("utf-8")
-        result.append(value)
-    return result
+        try:
+            cell = row.cells[column_family_id][column][0]
+            value = cell.value.decode("utf-8")
+            result.append(value)
+        except:
+            continue
+    # 總計票數
+    vote_count = sum(1 for vote in result if vote)
+    # print(result)
+    # print(vote_count)
+    return vote_count
