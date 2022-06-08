@@ -177,41 +177,45 @@ def admin():
         #######
         if hash_result == "ce8c7e426b44dd7ca875d38dc44973096626d8d7f569c52554b639998a6be4b4": 
             print("Admin 登入成功") 
-            #  實作 User 類別  
+            # 實作 User 類別  
             user = User()
-            #  設置 id (這裡的 id 有包括年份與投票區)
+            # 設置 id (這裡的 id 有包括年份與投票區)
             user.id = "admin"
-            #  這邊，透過 login_user 來記錄 user_id  
+            # 這邊，透過 login_user 來記錄 user_id  
             login_user(user)
-            #  登入成功，轉址  
-            return render_template('admin.html')
+            # 取得所有項目的當前票數
+            all_column_families = big_table.read_column_families(TABLE)
+            all_columns = big_table.read_all_columns(TABLE)
+            all_vote_dic = dict()
+            for k, v in all_columns.items():
+                if k == "Status":
+                    continue
+                column_dic = dict()
+                for col in v:
+                    all_votes = big_table.read_all_votes(TABLE, str(k), str(col))
+                    if "#" in col:
+                        place, name = col.split("#")[0], col.split("#")[1]
+                    else:
+                        place, name = "All", col
+                    if place in column_dic:
+                        column_dic[place][name] = all_votes
+                    else:
+                        column_dic[place] = {name: all_votes}
+                all_vote_dic[k] = column_dic
+            return render_template('admin.html', all_column_families=all_column_families, all_columns=all_columns, all_vote_dic=all_vote_dic)
         else:
             print("登入失敗") 
             return render_template('admin_index.html')
 
 
-@app.route("/d3", methods=['GET'])
-# @login_required
-def d3():
-    if request.method == 'GET':
-        all_column_families = big_table.read_column_families(TABLE)
-        all_columns = big_table.read_all_columns(TABLE)
-        all_vote_dic = dict()
-        for k, v in all_columns.items():
-            column_dic = dict()
-            for col in v:
-                all_votes  = big_table.read_all_votes(TABLE, str(k), str(col))
-                column_dic[col] = all_votes
-            all_vote_dic[k] = column_dic
-
-        return render_template('d3.html', all_column_families=all_column_families, all_columns=all_columns, all_vote_dic=all_vote_dic)
-
+##############################################################################
 
 if __name__ == "__main__":
     # app.run(host="0.0.0.0", port=PORT_NUM)
     app.run()
+    # 寫入新的使用者資料到 bigtable 裡面
     # usa_dict={'California':['Los_angles','San_francisco','San_diego'],'Texas':['Houston','San_Antonio','Dallas'] , 'Alaska':['Sitka','Juneau','Wrangell']}
-    # for i in range(0, 10):
+    # for i in range(1, 101):
     #     j = i % len(usa_dict)
     #     j = list(usa_dict.keys())[j]
     #     k = i % len(usa_dict[j])

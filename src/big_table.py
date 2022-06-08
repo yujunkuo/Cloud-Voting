@@ -81,8 +81,8 @@ def read_all_votes(table, column_family_id: str, column_id: str):
             result.append(value)
         except:
             continue
-    # 總計票數
-    vote_count = sum(1 for vote in result if vote)
+    # 總計票數 (減 1 是要扣除 default 的 Row)
+    vote_count = sum(1 for vote in result if vote) - 1
     # print(result)
     # print(vote_count)
     return vote_count

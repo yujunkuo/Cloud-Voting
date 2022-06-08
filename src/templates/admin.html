@@ -17,6 +17,23 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js"
         integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF"
         crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cdbootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cdbootstrap/css/cdb.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/cdbootstrap/js/cdb.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cdbootstrap/js/bootstrap.min.js"></script>
+    <script src="https://kit.fontawesome.com/9d1d9a82d2.js" crossorigin="anonymous"></script>
+
+    <style>
+        .chart-container {
+            width: 50%;
+            height: 50%;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 5%;
+            margin-bottom: 5%;
+        }
+    </style>
 </head>
 
 <body>
@@ -27,28 +44,43 @@
                     <div class="card" style="border-radius: 1rem;">
                         <div class="row g-0">
                             <div class="col-md-6 col-lg-5 d-none d-md-block">
-                                <img src= "/static/background.jpg" 
-                                    alt="login form" class="img-fluid" style="border-radius: 1rem 0 0 1rem;" />
+                                <img src="/static/background.jpg" alt="login form" class="img-fluid"
+                                    style="border-radius: 1rem 0 0 1rem;" />
                             </div>
                             <div class="col-md-6 col-lg-7 d-flex align-items-center">
                                 <div class="card-body p-4 p-lg-5 text-black">
 
-                                    <form method='post' action="/">
-                                        <div class="d-flex align-items-center mb-3 pb-1">
-                                            <i class="fas fa-cubes fa-2x me-3" style="color: #ff6219;"></i>
-                                            <span class="h1 fw-bold mb-0"> 投票系統 (管理頁面) </span>
+                                    <div class="d-flex align-items-center mb-3 pb-1">
+                                        <i class="fas fa-cubes fa-2x me-3" style="color: #202551;"></i>
+                                        <span class="h1 fw-bold mb-0"> 投票系統 (管理頁面) </span>
+                                    </div>
+                                        <ul class="nav nav-tabs" id="myTab" role="tablist">
+                                            {% for position, content in all_vote_dic.items() %}
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="{{ position }}-tab" data-bs-toggle="tab"
+                                                    data-bs-target="#{{ position }}" type="button" role="tab"
+                                                    aria-controls="{{ position }}">{{ position
+                                                    }}</button>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                        <div class="tab-content" id="myTabContent" style="overflow:scroll; height:400px;">
+                                            {% for position, content in all_vote_dic.items() %}
+                                            <div class="tab-pane fade" id="{{ position }}" role="tabpanel"
+                                                aria-labelledby="{{ position }}-tab">
+                                                {% for place, candidate in content.items() %}
+                                                <div class="card chart-container">
+                                                    <canvas id="chart-{{ position }}-{{ place }}"></canvas>
+                                                </div>
+                                                <!-- <p>{{ place }}</p> -->
+                                                <!-- {% for name, vote in candidate.items() %}
+                                            <p>{{ name }}: {{ vote }}</p>
+                                            {% endfor %} -->
+                                                {% endfor %}
+                                            </div>
+                                            {% endfor %}
                                         </div>
-
-                                        <select class="form-select" aria-label="Default select example">
-                                            <option selected>選舉項目</option>
-                                            <option value="1"> a </option>
-                                            <option value="1"> b </option>
-                                            <option value="1"> c </option>
-                                        </select>
-
-                                        <a href="#!" class="small text-muted">Privacy policy</a>
-                                    </form>
-
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -58,5 +90,59 @@
         </div>
     </section>
 </body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.js"></script>
+<script>
+    var all_vote_dic = {{ all_vote_dic | tojson }};
+    // console.log(all_vote_dic);
+    for (var position in all_vote_dic) {
+        for (var place in all_vote_dic[position]) {
+            var element_id = "chart" + "-" + position + "-" + place;
+            var label = place;
+            var labels = [];
+            var data = [];
+            for (var name in all_vote_dic[position][place]) {
+                var vote = all_vote_dic[position][place][name];
+                labels.push(name);
+                data.push(vote);
+            }
+            console.log(element_id, labels, label, data);
+            drawChart(element_id, labels, label, data);
+        }
+    }
+
+    function drawChart(element_id, labels, label, data) {
+        const ctx = document.getElementById(element_id).getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                //labels: ["rice", "yam", "tomato", "potato",
+                //    "beans", "maize", "oil"],
+                labels: labels,
+                datasets: [{
+                    //label: 'food Items',
+                    label: label,
+                    backgroundColor: 'rgba(161, 198, 247, 1)',
+                    borderColor: 'rgb(47, 128, 237)',
+                    //data: [300, 400, 200, 500, 800, 900, 200],
+                    data: data,
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true,
+                            stepSize: 1,
+                        }
+                    }]
+                }
+            },
+        });
+    }
+
+    document.getElementById("Legislator-tab").click();
+
+</script>
 
 </html>
