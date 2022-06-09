@@ -7,7 +7,7 @@ import big_table
 import utils
 
 from flask import Flask, request, render_template, url_for, redirect
-from flask_login import LoginManager, UserMixin, login_user, current_user, login_required, logout_user 
+from flask_login import LoginManager, UserMixin, login_user, current_user, login_required, logout_user
 
 from google.cloud import bigtable
 from google.cloud.bigtable import column_family
@@ -25,7 +25,7 @@ with open("./config/config.yml", "r") as stream:
 
 
 ## Set Bigtable & Other Config
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./config/gcp_key.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./config/cloud-voting-a1780cbeb5a9(1).json"
 
 PROJECT_ID = config["project_id"]
 INSTANCE_ID = config["instance_id"]
@@ -60,21 +60,21 @@ rows = TABLE.read_rows(filter_=row_filters.StripValueTransformerFilter(True))
 users = [row.row_key.decode('utf-8') for row in rows]
 # {user_id: user_info} pairs
 users = {user.split("#")[-1]: user for user in users}
-  
-  
+
+
 class User(UserMixin):
-    pass  
-  
-  
+    pass
+
+
 # 檢查 user 登入狀態
-@login_manager.user_loader  
-def user_loader(id):   
-    if id != "admin" and id not in users.values():  
+@login_manager.user_loader
+def user_loader(id):
+    if id != "admin" and id not in users.values():
         return
     else:
-        user = User()  
+        user = User()
         user.id = id
-        return user   
+        return user
 
 
 ##############################################################################
@@ -92,27 +92,27 @@ def index():
         ## Hash
         hash_result = utils.hash(id)
         #######
-        if hash_result in users: 
-            print("登入成功") 
-            #  實作 User 類別  
+        if hash_result in users:
+            print("登入成功")
+            #  實作 User 類別
             user = User()
             #  設置 id (這裡的 id 有包括年份與投票區)
             user.id = users[hash_result]
-            #  這邊，透過 login_user 來記錄 user_id  
+            #  這邊，透過 login_user 來記錄 user_id
             login_user(user)
-            #  登入成功，轉址  
-            return redirect(url_for('vote')) 
+            #  登入成功，轉址
+            return redirect(url_for('vote'))
         else:
-            print("登入失敗") 
+            print("登入失敗")
             print(hash_result)
-            return render_template('login_fail.html')  
+            return render_template('login_fail.html')
 
 
 @app.route("/vote", methods=['GET', 'POST'])
 @login_required
 def vote():
     #  current_user確實的取得了登錄狀態
-    if current_user.is_active:  
+    if current_user.is_active:
         print(current_user.id)
     # 取得所有欄位名稱
     column_names = big_table.read_all_columns(TABLE)
@@ -162,7 +162,7 @@ def vote():
         # 登出
         logout_user()
         return render_template('success.html', voting_result=voting_result)
-    
+
 
 @app.route("/admin", methods=['GET', 'POST'])
 def admin():
@@ -175,13 +175,13 @@ def admin():
         ## Hash
         hash_result = utils.hash(id)
         #######
-        if hash_result == "ce8c7e426b44dd7ca875d38dc44973096626d8d7f569c52554b639998a6be4b4": 
-            print("Admin 登入成功") 
-            # 實作 User 類別  
+        if hash_result == "ce8c7e426b44dd7ca875d38dc44973096626d8d7f569c52554b639998a6be4b4":
+            print("Admin 登入成功")
+            # 實作 User 類別
             user = User()
             # 設置 id (這裡的 id 有包括年份與投票區)
             user.id = "admin"
-            # 這邊，透過 login_user 來記錄 user_id  
+            # 這邊，透過 login_user 來記錄 user_id
             login_user(user)
             # 取得所有項目的當前票數
             all_column_families = big_table.read_column_families(TABLE)
@@ -204,7 +204,7 @@ def admin():
                 all_vote_dic[k] = column_dic
             return render_template('admin.html', all_column_families=all_column_families, all_columns=all_columns, all_vote_dic=all_vote_dic)
         else:
-            print("登入失敗") 
+            print("登入失敗")
             return render_template('admin_index.html')
 
 
